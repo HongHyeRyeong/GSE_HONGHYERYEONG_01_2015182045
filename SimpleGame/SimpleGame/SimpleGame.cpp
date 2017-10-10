@@ -8,14 +8,16 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY.
 */
 
-#include "stdafx.h"
 #include <iostream>
+#include "stdafx.h"
+#include "Object.h"
 #include "Dependencies\glew.h"
 #include "Dependencies\freeglut.h"
 
 #include "Renderer.h"
 
 Renderer *g_Renderer = NULL;
+Object *object = new Object(100, 50, 0, 150, 150, 50, 0, 1);
 
 void RenderScene(void)
 {
@@ -23,7 +25,8 @@ void RenderScene(void)
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
 	// Renderer Test
-	g_Renderer->DrawSolidRect(0, 0, 0, 100, 1, 0, 1, 1);
+	g_Renderer->DrawSolidRect(object->getX(), object->getY(), object->getZ(),
+		object->getSize(), object->getR(), object->getG(), object->getB(), 1);
 
 	glutSwapBuffers();
 }
