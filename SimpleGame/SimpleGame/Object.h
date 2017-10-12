@@ -3,19 +3,19 @@
 class Object
 {
 	float x, y, z;
-	float size;
-	float r, g, b, a;
+	int size;
+	float vX, vY;
+
 public:
-	Object();
-	Object(float x, float y, float z, float size, float r, float g, float b, float a);
-	~Object();
+	Object() {};
+	Object(float x, float y, float z, int size) :x(x), y(y), z(z), size(size), vX(1.5), vY(-1.5) {};
+	~Object() {};
+
+	void Update();
 
 	float getX() { return x; };
 	float getY() { return y; };
 	float getZ() { return z; };
-	float getSize() { return size; };
-	float getR() { return r; };
-	float getG() { return g; };
-	float getB() { return b; };
+	int getSize() { return size; };
 };
 

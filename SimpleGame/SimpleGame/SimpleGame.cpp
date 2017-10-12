@@ -17,7 +17,7 @@ but WITHOUT ANY WARRANTY.
 #include "Renderer.h"
 
 Renderer *g_Renderer = NULL;
-Object *object = new Object(100, 50, 0, 150, 150, 50, 0, 1);
+Object *object = NULL;
 
 void RenderScene(void)
 {
@@ -25,8 +25,11 @@ void RenderScene(void)
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
 	// Renderer Test
-	g_Renderer->DrawSolidRect(object->getX(), object->getY(), object->getZ(),
-		object->getSize(), object->getR(), object->getG(), object->getB(), 1);
+	if (object != NULL) {
+		g_Renderer->DrawSolidRect(object->getX(), object->getY(), object->getZ(), object->getSize(), 150, 50, 0, 1);
+
+		object->Update();
+	}
 
 	glutSwapBuffers();
 }
@@ -38,6 +41,10 @@ void Idle(void)
 
 void MouseInput(int button, int state, int x, int y)
 {
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		object = new Object(x - 250, 250 - y, 0, 100);
+	}
+
 	RenderScene();
 }
 
@@ -56,7 +63,7 @@ int main(int argc, char **argv)
 	// Initialize GL things
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowPosition(0, 0);
+	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(500, 500);
 	glutCreateWindow("Game Software Engineering KPU");
 
@@ -86,6 +93,7 @@ int main(int argc, char **argv)
 	glutMainLoop();
 
 	delete g_Renderer;
+	delete object;
 
     return 0;
 }

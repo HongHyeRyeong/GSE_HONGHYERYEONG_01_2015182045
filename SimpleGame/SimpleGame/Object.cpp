@@ -1,16 +1,15 @@
 #include "stdafx.h"
 #include "Object.h"
 
-Object::Object()
+void Object::Update()
 {
-}
+	float time = 0.2;
 
+	if (x >= 250 || x <= -250)
+		vX = -vX;
+	else if (y >= 250 || y <= -250)
+		vY = -vY;
 
-Object::Object(float x, float y, float z, float size, float r, float g, float b, float a)
-	:x(x), y(y), z(z), size(size), r(r), g(g), b(b), a(a)
-{
-}
-
-Object::~Object()
-{
+	x += vX*time;
+	y += vY*time;
 }
