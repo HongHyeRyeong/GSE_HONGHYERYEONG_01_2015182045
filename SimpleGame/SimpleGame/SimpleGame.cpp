@@ -1,23 +1,13 @@
-/*
-Copyright 2017 Lee Taek Hee (Korea Polytech University)
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the What The Hell License. Do it plz.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY.
-*/
-
 #include <iostream>
 #include "stdafx.h"
-#include "Object.h"
+#include "SceneMgr.h"
 #include "Dependencies\glew.h"
 #include "Dependencies\freeglut.h"
 
 #include "Renderer.h"
 
 Renderer *g_Renderer = NULL;
-Object *object = NULL;
+SceneMgr *mgr = NULL;
 
 void RenderScene(void)
 {
@@ -25,11 +15,9 @@ void RenderScene(void)
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
 	// Renderer Test
-	if (object != NULL) {
-		g_Renderer->DrawSolidRect(object->getX(), object->getY(), object->getZ(), object->getSize(), 150, 50, 0, 1);
-
-		object->Update();
-	}
+	for (int i = 0; i < mgr->getNum(); ++i)
+		g_Renderer->DrawSolidRect(mgr->getX(i), mgr->getY(i), mgr->getY(i), mgr->getSize(i), 1, 1, 1, 1);
+	mgr->Update();
 
 	glutSwapBuffers();
 }
@@ -42,7 +30,7 @@ void Idle(void)
 void MouseInput(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		object = new Object(x - 250, 250 - y, 0, 100);
+		mgr->Add(x - 250, 250 - y, 0, 30);
 	}
 
 	RenderScene();
@@ -69,20 +57,16 @@ int main(int argc, char **argv)
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_3_0"))
-	{
 		std::cout << " GLEW Version is 3.0\n ";
-	}
 	else
-	{
 		std::cout << "GLEW 3.0 not supported\n ";
-	}
 
 	// Initialize Renderer
 	g_Renderer = new Renderer(500, 500);
 	if (!g_Renderer->IsInitialized())
-	{
 		std::cout << "Renderer could not be initialized.. \n";
-	}
+
+	mgr = new SceneMgr();
 
 	glutDisplayFunc(RenderScene);
 	glutIdleFunc(Idle);
@@ -93,8 +77,8 @@ int main(int argc, char **argv)
 	glutMainLoop();
 
 	delete g_Renderer;
-	delete object;
+	delete mgr;
 
-    return 0;
+	return 0;
 }
 

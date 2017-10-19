@@ -3,7 +3,7 @@
 
 void Object::Update()
 {
-	float time = 0.2;
+	float time = 0.5;
 
 	if (x >= 250 || x <= -250)
 		vX = -vX;
