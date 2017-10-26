@@ -1,23 +1,21 @@
 #pragma once
 
+#include <iostream>
 #include "Object.h"
-#define MAX_OBJECTS_COUNT 100
+#include "Renderer.h"
+#define MAX_OBJECTS_COUNT 10
 
 class SceneMgr
 {
+	Renderer *m_Renderer;
 	Object *m_object[MAX_OBJECTS_COUNT];
-	int objectNum;
 public:
 	SceneMgr();
 	~SceneMgr();
 
 	void Add(float x, float y, float z, int size);
-	void Update();
-
-	int getNum() { return objectNum; }
-	float getX(int i) { return m_object[i]->getX(); }
-	float getY(int i) { return m_object[i]->getY(); };
-	float getZ(int i) { return m_object[i]->getX(); };
-	int getSize(int i) { return m_object[i]->getSize(); };
+	void Update(float elapsedTime);
+	void DrawSolidRect();
+	bool CollisionTest(float left, float bottom, float right, float top, float left1, float bottom1, float right1, float top1);
 };
 

@@ -1,9 +1,19 @@
 #include "stdafx.h"
 #include "Object.h"
 
-void Object::Update()
+Object::Object(float x, float y, float z, float size) :x(x), y(y), z(z), size(size)
 {
-	float time = 0.5;
+	vX = 200.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+	vY = 200.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+
+	rgb[0] = 1;
+	rgb[1] = 1;
+	rgb[2] = 1;
+}
+
+void Object::Update(float elapsedTime)
+{
+	float time = elapsedTime / 1000;
 
 	if (x >= 250 || x <= -250)
 		vX = -vX;

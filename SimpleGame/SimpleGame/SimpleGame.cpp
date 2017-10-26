@@ -1,23 +1,25 @@
-#include <iostream>
 #include "stdafx.h"
+#include "windows.h"
+#include <iostream>
 #include "SceneMgr.h"
 #include "Dependencies\glew.h"
 #include "Dependencies\freeglut.h"
 
-#include "Renderer.h"
-
-Renderer *g_Renderer = NULL;
 SceneMgr *mgr = NULL;
+
+DWORD g_startTime = NULL;
 
 void RenderScene(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 
-	// Renderer Test
-	for (int i = 0; i < mgr->getNum(); ++i)
-		g_Renderer->DrawSolidRect(mgr->getX(i), mgr->getY(i), mgr->getY(i), mgr->getSize(i), 1, 1, 1, 1);
-	mgr->Update();
+	DWORD currTime = timeGetTime();
+	DWORD elapsedTime = currTime - g_startTime;
+	g_startTime = currTime;
+	
+	mgr->Update((float)elapsedTime);
+	mgr->DrawSolidRect();
 
 	glutSwapBuffers();
 }
@@ -30,7 +32,7 @@ void Idle(void)
 void MouseInput(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		mgr->Add(x - 250, 250 - y, 0, 30);
+		mgr->Add(x - 250, 250 - y, 0, 20);
 	}
 
 	RenderScene();
@@ -61,12 +63,8 @@ int main(int argc, char **argv)
 	else
 		std::cout << "GLEW 3.0 not supported\n ";
 
-	// Initialize Renderer
-	g_Renderer = new Renderer(500, 500);
-	if (!g_Renderer->IsInitialized())
-		std::cout << "Renderer could not be initialized.. \n";
-
 	mgr = new SceneMgr();
+	g_startTime = timeGetTime();
 
 	glutDisplayFunc(RenderScene);
 	glutIdleFunc(Idle);
@@ -76,7 +74,6 @@ int main(int argc, char **argv)
 
 	glutMainLoop();
 
-	delete g_Renderer;
 	delete mgr;
 
 	return 0;
