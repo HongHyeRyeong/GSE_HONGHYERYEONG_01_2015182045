@@ -7,6 +7,7 @@ class Object
 	float size;
 	float rgb[3];
 	float vX, vY;
+	float life, lifeTime;
 
 public:
 	Object() {};
@@ -20,7 +21,11 @@ public:
 	float getZ() { return z; };
 	float getSize() { return size; };
 	float getRGB(int i) { return rgb[i]; }
+	float getLife() { return life; }
+	float gerLifeTime() { return lifeTime; }
 
 	void setRGB(int i, int j) { rgb[i] = j; }
+
+	void Collision() { life--; }
 };
 

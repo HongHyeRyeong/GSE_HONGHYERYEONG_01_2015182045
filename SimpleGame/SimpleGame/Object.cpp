@@ -9,6 +9,9 @@ Object::Object(float x, float y, float z, float size) :x(x), y(y), z(z), size(si
 	rgb[0] = 1;
 	rgb[1] = 1;
 	rgb[2] = 1;
+
+	life = 200;
+	lifeTime = 3000;
 }
 
 void Object::Update(float elapsedTime)
@@ -22,4 +25,7 @@ void Object::Update(float elapsedTime)
 
 	x += vX*time;
 	y += vY*time;
+
+	life -= 0.1;
+	lifeTime -= elapsedTime;
 }

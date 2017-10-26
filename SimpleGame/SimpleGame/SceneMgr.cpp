@@ -56,6 +56,7 @@ void SceneMgr::Update(float elapsedTime)
 				m_object[i]->setRGB(0, 1);
 				m_object[i]->setRGB(1, 0);
 				m_object[i]->setRGB(2, 0);
+				m_object[i]->Collision();
 			}
 			else {
 				m_object[i]->setRGB(0, 1);
@@ -64,6 +65,18 @@ void SceneMgr::Update(float elapsedTime)
 			}
 		}
 	}
+
+	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+		if (m_object[i] != NULL) {
+			//if (m_object[i]->getLife() <= 0) {
+			//	delete m_object[i];
+			//	m_object[i] = NULL;
+			//}
+			if (m_object[i]->gerLifeTime() <= 0) {
+				delete m_object[i];
+				m_object[i] = NULL;
+			}
+		}
 }
 
 void SceneMgr::DrawSolidRect()
