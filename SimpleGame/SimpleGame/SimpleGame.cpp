@@ -8,6 +8,7 @@
 SceneMgr *mgr = NULL;
 
 DWORD g_startTime = NULL;
+DWORD g_bulletTime = NULL;
 
 void RenderScene(void)
 {
@@ -17,6 +18,14 @@ void RenderScene(void)
 	DWORD currTime = timeGetTime();
 	DWORD elapsedTime = currTime - g_startTime;
 	g_startTime = currTime;
+
+	if (mgr->isBuilding()) {	// 건물이 존재할때만
+		currTime = (float)timeGetTime() / 1000;
+		if (currTime - g_bulletTime >= 0.5f) {
+			mgr->Add(0, 0, 5, OBJECT_BULLET);
+			g_bulletTime = currTime;
+		}
+	}
 	
 	mgr->Update((float)elapsedTime);
 	mgr->DrawSolidRect();
@@ -32,7 +41,7 @@ void Idle(void)
 void MouseInput(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		mgr->Add(x - 250, 250 - y, 0, 20);
+		mgr->Add(x - 250, 250 - y, 10, OBJECT_CHARACTER);
 	}
 
 	RenderScene();
@@ -65,6 +74,7 @@ int main(int argc, char **argv)
 
 	mgr = new SceneMgr();
 	g_startTime = timeGetTime();
+	mgr->Add(0, 0, 50, OBJECT_BUILDING);
 
 	glutDisplayFunc(RenderScene);
 	glutIdleFunc(Idle);

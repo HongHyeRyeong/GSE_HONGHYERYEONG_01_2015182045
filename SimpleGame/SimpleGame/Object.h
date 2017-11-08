@@ -3,7 +3,7 @@
 
 class Object
 {
-	float x, y, z;
+	float x, y;
 	float size;
 	float rgb[3];
 	float vX, vY;
@@ -11,21 +11,19 @@ class Object
 
 public:
 	Object() {};
-	Object(float x, float y, float z, float size);
+	Object(float x, float y, float size, int type);
 	~Object() {};
 
 	void Update(float elapsedTime);
+	void Collision(int num) { life -= num; }
 
 	float getX() { return x; };
 	float getY() { return y; };
-	float getZ() { return z; };
 	float getSize() { return size; };
 	float getRGB(int i) { return rgb[i]; }
 	float getLife() { return life; }
 	float gerLifeTime() { return lifeTime; }
 
-	void setRGB(int i, int j) { rgb[i] = j; }
-
-	void Collision() { life--; }
+	void setRGB(int i, float j) { rgb[i] = j; }
 };
 
