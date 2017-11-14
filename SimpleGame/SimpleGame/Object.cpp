@@ -2,7 +2,7 @@
 #include "Object.h"
 #include "SceneMgr.h"
 
-Object::Object(float x, float y, float size, int type) :x(x), y(y), size(size)
+Object::Object(float x, float y, float size, int type) :x(x), y(y), size(size), type(type)
 {
 	if (type == OBJECT_BUILDING) {
 		life = 500;
@@ -21,6 +21,8 @@ Object::Object(float x, float y, float size, int type) :x(x), y(y), size(size)
 		rgb[0] = 1;
 		rgb[1] = 1;
 		rgb[2] = 1;
+
+		arrowTime = 0;
 	}
 	else if (type == OBJECT_BULLET) {
 		life = 20;
@@ -30,6 +32,17 @@ Object::Object(float x, float y, float size, int type) :x(x), y(y), size(size)
 		rgb[0] = 1;
 		rgb[1] = 0;
 		rgb[2] = 0;
+	}
+	else if (type == OBJECT_ARROW) {
+		life = 10;
+		vX = 100.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+		vY = 100.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+
+		rgb[0] = 0;
+		rgb[1] = 1;
+		rgb[2] = 0;
+
+		arrowID = NULL;
 	}
 }
 
@@ -45,5 +58,8 @@ void Object::Update(float elapsedTime)
 	x += vX*time;
 	y += vY*time;
 
-	lifeTime -= elapsedTime;
+	//lifeTime -= elapsedTime;
+
+	if (type == OBJECT_CHARACTER)
+		arrowTime += time;
 }

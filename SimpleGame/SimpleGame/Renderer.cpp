@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Renderer.h"
+#include "LoadPng.h"
 
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
@@ -19,6 +20,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 
 	//Load shaders
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
+	m_SolidRectWithTextureShader = CompileShaders("./Shaders/SolidRectWithTexture.vs", "./Shaders/SolidRectWithTexture.fs");
+	m_SolidRectWithTextureSeqShader = CompileShaders("./Shaders/SolidRectWithTextureSeq.vs", "./Shaders/SolidRectWithTextureSeq.fs");
 	
 	//Create VBOs
 	CreateVertexBufferObjects();
@@ -34,18 +37,62 @@ bool Renderer::IsInitialized()
 	return m_Initialized;
 }
 
+GLuint Renderer::CreatePngTexture(char * filePath)
+{
+
+	GLuint temp;
+	glGenTextures(1, &temp);
+
+	//Load Pngs
+	// Load file and decode image.
+	std::vector<unsigned char> image;
+	unsigned width, height;
+	unsigned error = lodepng::decode(image, width, height, filePath);
+
+	glBindTexture(GL_TEXTURE_2D, temp);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+
+	return temp;
+}
+
+void Renderer::DeleteTexture(GLuint textureID)
+{
+	glDeleteTextures(1, &textureID);
+}
+
 void Renderer::CreateVertexBufferObjects()
 {
 	float rect[]
 		=
 	{
-		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, -1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, //Triangle1
-		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f,  1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, //Triangle2
+		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, 
+		-1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f,
+		 1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, //Triangle1
+		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, 
+		 1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f,
+		 1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, //Triangle2
 	};
 
 	glGenBuffers(1, &m_VBORect);
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBORect);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+
+	float rectTex[]
+		=
+	{
+		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, 0.f, 0.f,
+		-1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 0.f, 1.f,
+		 1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 1.f, 1.f,        //Triangle1
+		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, 0.f, 0.f,
+		 1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 1.f, 1.f,
+		 1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, 1.f, 0.f,        //Triangle2
+	};
+
+	glGenBuffers(1, &m_VBORectTex);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBORectTex);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rectTex), rectTex, GL_STATIC_DRAW);
 }
 
 void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)
@@ -153,7 +200,7 @@ GLuint Renderer::CompileShaders(char* filenameVS, char* filenameFS)
 	}
 
 	glUseProgram(ShaderProgram);
-	std::cout << filenameVS << ", " << filenameFS << " Shader compiling is done.";
+	std::cout << filenameVS << ", " << filenameFS << " Shader compiling is done.\n";
 
 	return ShaderProgram;
 }
@@ -166,6 +213,9 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 
 	//Program select
 	glUseProgram(m_SolidRectShader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Trans"), newX, newY, 0, size);
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Color"), r, g, b, a);
@@ -182,8 +232,162 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Renderer::DrawTexturedRect(float x, float y, float z, float size, float r, float g, float b, float a, GLuint texID)
+{
+	float newX, newY;
+
+	GetGLPosition(x, y, &newX, &newY);
+
+	//Program select
+	glUseProgram(m_SolidRectWithTextureShader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	GLuint u_Trans = glGetUniformLocation(m_SolidRectWithTextureShader, "u_Trans");
+	GLuint u_Color = glGetUniformLocation(m_SolidRectWithTextureShader, "u_Color");
+
+	glUniform4f(u_Trans, newX, newY, 0, size);
+	glUniform4f(u_Color, r, g, b, a);
+
+	GLuint attribPosition = glGetAttribLocation(m_SolidRectWithTextureShader, "a_Position");
+	GLuint attribTexPosition = glGetAttribLocation(m_SolidRectWithTextureShader, "a_TexPosition");
+	glEnableVertexAttribArray(attribPosition);
+	glEnableVertexAttribArray(attribTexPosition);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBORectTex);
+	glVertexAttribPointer(attribPosition, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+	glVertexAttribPointer(attribTexPosition, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	GLuint u_Texture = glGetUniformLocation(m_SolidRectWithTextureShader, "u_Texture");
+	glUniform1i(u_Texture, 0);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisableVertexAttribArray(attribPosition);
+	glDisableVertexAttribArray(attribTexPosition);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::DrawTexturedRectSeq(float x, float y, float z, float size, float r, float g, float b, float a, GLuint texID, int currSeq, int totalSeq)
+{
+	float newX, newY;
+
+	GetGLPosition(x, y, &newX, &newY);
+
+	//Program select
+	glUseProgram(m_SolidRectWithTextureSeqShader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	GLuint u_Trans = glGetUniformLocation(m_SolidRectWithTextureSeqShader, "u_Trans");
+	GLuint u_Color = glGetUniformLocation(m_SolidRectWithTextureSeqShader, "u_Color");
+	GLuint u_TotalSeq = glGetUniformLocation(m_SolidRectWithTextureSeqShader, "u_TotalSeq");
+	GLuint u_CurrSeq = glGetUniformLocation(m_SolidRectWithTextureSeqShader, "u_CurrSeq");
+
+	glUniform4f(u_Trans, newX, newY, 0, size);
+	glUniform4f(u_Color, r, g, b, a);
+	glUniform1f(u_TotalSeq, (float)totalSeq);
+	glUniform1f(u_CurrSeq, (float)currSeq);
+
+	GLuint attribPosition = glGetAttribLocation(m_SolidRectWithTextureSeqShader, "a_Position");
+	GLuint attribTexPosition = glGetAttribLocation(m_SolidRectWithTextureSeqShader, "a_TexPosition");
+	glEnableVertexAttribArray(attribPosition);
+	glEnableVertexAttribArray(attribTexPosition);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBORectTex);
+	glVertexAttribPointer(attribPosition, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+	glVertexAttribPointer(attribTexPosition, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	GLuint u_Texture = glGetUniformLocation(m_SolidRectWithTextureSeqShader, "u_Texture");
+	glUniform1i(u_Texture, 0);
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glDisableVertexAttribArray(attribPosition);
+	glDisableVertexAttribArray(attribTexPosition);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
 {
 	*newX = x * 2.f / m_WindowSizeX;
 	*newY = y * 2.f / m_WindowSizeY;
+}
+
+unsigned char * Renderer::loadBMPRaw(const char * imagepath, unsigned int& outWidth, unsigned int& outHeight, bool flipY) 
+{
+	printf("Reading image %s\n", imagepath);
+	outWidth = -1;
+	outHeight = -1;
+	// Data read from the header of the BMP file
+	unsigned char header[54];
+	unsigned int dataPos;
+	unsigned int imageSize;
+	// Actual RGB data
+	unsigned char * data;
+
+	// Open the file
+	FILE * file;
+	fopen_s(&file, imagepath, "rb");
+	if (!file) { printf("Image could not be opened\n"); return NULL; }
+
+	// Read the header, i.e. the 54 first bytes
+
+	// If less than 54 byes are read, problem
+	if (fread(header, 1, 54, file) != 54) {
+		printf("Not a correct BMP file\n");
+		return NULL;
+	}
+	// A BMP files always begins with "BM"
+	if (header[0] != 'B' || header[1] != 'M') {
+		printf("Not a correct BMP file\n");
+		return NULL;
+	}
+	// Make sure this is a 24bpp file
+	if (*(int*)&(header[0x1E]) != 0) { printf("Not a correct BMP file\n");    return NULL; }
+	if (*(int*)&(header[0x1C]) != 24) { printf("Not a correct BMP file\n");    return NULL; }
+
+	// Read the information about the image
+	dataPos = *(int*)&(header[0x0A]);
+	imageSize = *(int*)&(header[0x22]);
+	outWidth = *(int*)&(header[0x12]);
+	outHeight = *(int*)&(header[0x16]);
+
+	// Some BMP files are misformatted, guess missing information
+	if (imageSize == 0)    imageSize = outWidth*outHeight * 3; // 3 : one byte for each Red, Green and Blue component
+	if (dataPos == 0)      dataPos = 54; // The BMP header is done that way
+
+										 // Create a buffer
+	data = new unsigned char[imageSize];
+
+	// Read the actual data from the file into the buffer
+	fread(data, 1, imageSize, file);
+
+	// Everything is in memory now, the file wan be closed
+	fclose(file);
+
+	if (flipY) {
+		// swap y-axis
+		unsigned char * tmpBuffer = new unsigned char[outWidth * 3];
+		int size = outWidth * 3;
+		for (int i = 0; i<outHeight / 2; i++) {
+			// copy row i to tmp
+			memcpy_s(tmpBuffer, size, data + outWidth * 3 * i, size);
+			// copy row h-i-1 to i
+			memcpy_s(data + outWidth * 3 * i, size, data + outWidth * 3 * (outHeight - i - 1), size);
+			// copy tmp to row h-i-1
+			memcpy_s(data + outWidth * 3 * (outHeight - i - 1), size, tmpBuffer, size);
+		}
+		delete[] tmpBuffer;
+	}
+
+	return data;
 }

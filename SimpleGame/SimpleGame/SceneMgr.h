@@ -16,6 +16,9 @@ class SceneMgr
 	Object *m_building;
 	Object *m_character[MAX_OBJECTS_COUNT];
 	Object *m_bullet[100];
+	Object *m_arrow[100];
+
+	GLuint m_texBuilding;
 public:
 	SceneMgr();
 	~SceneMgr();

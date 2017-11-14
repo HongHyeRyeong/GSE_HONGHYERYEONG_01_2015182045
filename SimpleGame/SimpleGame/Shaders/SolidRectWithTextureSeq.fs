@@ -1,0 +1,17 @@
+#version 330
+
+out vec4 FragColor;
+
+in vec2 v_TexPosition;
+
+uniform sampler2D u_Texture;
+uniform float u_TotalSeq;
+uniform float u_CurrSeq;
+uniform vec4 u_Color;
+
+void main()
+{
+	vec2 newTexPos = vec2(v_TexPosition.x, 1-v_TexPosition.y);
+	newTexPos.x = u_CurrSeq/u_TotalSeq + newTexPos.x/u_TotalSeq;
+	FragColor = texture2D(u_Texture, newTexPos);
+}
