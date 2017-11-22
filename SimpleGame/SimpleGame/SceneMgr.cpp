@@ -3,68 +3,88 @@
 
 SceneMgr::SceneMgr()
 {
-	m_Renderer = new Renderer(500, 500);
+	m_Renderer = new Renderer(fieldW, fieldH);
 	if (!m_Renderer->IsInitialized())
 		std::cout << "Renderer could not be initialized.. \n";
 
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+	Add(-150, 300, OBJECT_BUILDING, 1);
+	Add(0, 300, OBJECT_BUILDING, 1);
+	Add(150, 300, OBJECT_BUILDING, 1);
+	Add(-150, -300, OBJECT_BUILDING, 2);
+	Add(0, -300, OBJECT_BUILDING, 2);
+	Add(150, -300, OBJECT_BUILDING, 2);
+
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		m_character[i] = NULL;
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i) {
 		m_bullet[i] = NULL;
-
-	for (int i = 0; i < 100; ++i)
 		m_arrow[i] = NULL;
+	}
 
-	m_texBuilding = m_Renderer->CreatePngTexture("./Resource/building.png");
+	m_texBuilding1 = m_Renderer->CreatePngTexture("./Resource/hanburger.png");
+	m_texBuilding2 = m_Renderer->CreatePngTexture("./Resource/chicken.png");
+
+	northTime = 0;
+	southTime = 7;
 }
 
 SceneMgr::~SceneMgr()
 {
-	if (m_building != NULL)
-		delete m_building;
+	for (int i = 0; i < 6; ++i)
+		if (m_building != NULL)
+			delete m_building[i];
 
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL)
 			delete m_character[i];
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_bullet[i] != NULL)
 			delete m_bullet[i];
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_arrow[i] != NULL)
 			delete m_arrow[i];
 
 	delete m_Renderer;
+	delete[] m_building;
 	delete[] m_character;
 	delete[] m_bullet;
 	delete[] m_arrow;
 }
 
-void SceneMgr::Add(float x, float y, int size, int type)
+void SceneMgr::Add(float x, float y, int type, int id)
 {
 	if (type == OBJECT_BUILDING) {
-		m_building = new Object(x, y, size, type);
+		for (int i = 0; i < 6; ++i)
+			if (m_building[i] == NULL) {
+				m_building[i] = new Object(x, y, type, id);
+				break;
+			}
 	}
 	else if (type == OBJECT_CHARACTER) {
-		for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+		for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 			if (m_character[i] == NULL) {
-				m_character[i] = new Object(x, y, size, type);
+				m_character[i] = new Object(x, y, type, id);
+
+				if (id == 2)
+					southTime = 0;
+
 				break;
 			}
 	}
 	else if (type == OBJECT_BULLET) {
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 			if (m_bullet[i] == NULL) {
-				m_bullet[i] = new Object(x, y, size, type);
+				m_bullet[i] = new Object(x, y, type, id);
 				break;
 			}
 	}
 	else if (type == OBJECT_ARROW) {
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 			if (m_arrow[i] == NULL) {
-				m_arrow[i] = new Object(x, y, size, type);
+				m_arrow[i] = new Object(x, y, type, id);
 				break;
 			}
 	}
@@ -72,26 +92,46 @@ void SceneMgr::Add(float x, float y, int size, int type)
 
 void SceneMgr::Update(float elapsedTime)
 {
+	// 유닛 배치
+	northTime += elapsedTime / 1000;
+	southTime += elapsedTime / 1000;
+
+	if (northTime >= 5) {
+		random_device rd;
+		mt19937_64 rng(rd());
+		uniform_int_distribution<> uiX(-200, 200);
+		uniform_int_distribution<> uiY(150, 300);
+
+		Add(uiX(rng), uiY(rng), OBJECT_CHARACTER, 1);
+		northTime = 0;
+	}
+
 	// 오브젝트 업데이트
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
-		if (m_character[i] != NULL) {
-			m_character[i]->Update(elapsedTime);
+	for (int i = 0; i < 6; ++i)
+		if (m_building[i] != NULL) {
+			m_building[i]->Update(elapsedTime);
 
-			if (m_character[i]->getArrowTime() >= 0.5) {
-				Add(m_character[i]->getX(), m_character[i]->getY(), 5, OBJECT_ARROW);
-				m_character[i]->setArrowTime(0);
-
-				for (int j = 0; j < 100; ++j)
-					if (m_arrow[j] != NULL && m_arrow[j]->getArrowID() == NULL)
-						m_arrow[j]->setArrowID(i);
+			if (m_building[i]->getAttackTime() >= 10) {
+				Add(m_building[i]->getX(), m_building[i]->getY(), OBJECT_BULLET, m_building[i]->getId());
+				m_building[i]->setAttackTime(0);
 			}
 		}
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
+		if (m_character[i] != NULL) {
+			m_character[i]->Update(elapsedTime);
+
+			if (m_character[i]->getAttackTime() >= 3) {
+				Add(m_character[i]->getX(), m_character[i]->getY(), OBJECT_ARROW, m_character[i]->getId());
+				m_character[i]->setAttackTime(0);
+			}
+		}
+
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_bullet[i] != NULL)
 			m_bullet[i]->Update(elapsedTime);
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_arrow[i] != NULL)
 			m_arrow[i]->Update(elapsedTime);
 
@@ -99,43 +139,43 @@ void SceneMgr::Update(float elapsedTime)
 	Collision();
 
 	// 소멸
-	if (m_building != NULL&&m_building->getLife() <= 0) {
-		delete m_building;
-		m_building = NULL;
-	}
+	for (int i = 0; i < 6; ++i)
+		if (m_building[i] != NULL&&m_building[i]->getLife() <= 0) {
+			delete m_building[i];
+			m_building[i] = NULL;
+		}
 
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i) {
-		if (m_character[i] != NULL) {
-			if (m_character[i]->getLife() <= 0) {
-				delete m_character[i];
-				m_character[i] = NULL;
-			}
-
-			//if (m_character[i]->gerLifeTime() <= 0) {
-			//	delete m_character[i];
-			//	m_character[i] = NULL;
-			//}
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i) {
+		if (m_character[i] != NULL && m_character[i]->getLife() <= 0) {
+			delete m_character[i];
+			m_character[i] = NULL;
 		}
 	}
 }
 
 void SceneMgr::DrawSolidRect()
 {
-	if (m_building != NULL)
-		m_Renderer->DrawTexturedRect(m_building->getX(), m_building->getY(), 0,
-			m_building->getSize(), m_building->getRGB(0), m_building->getRGB(1), m_building->getRGB(2), 1, m_texBuilding);
+	for(int i=0;i<6;++i)
+		if (m_building[i] != NULL) {
+			if (m_building[i]->getId() == 1)
+				m_Renderer->DrawTexturedRect(m_building[i]->getX(), m_building[i]->getY(), 0,
+					m_building[i]->getSize(), m_building[i]->getRGB(0), m_building[i]->getRGB(1), m_building[i]->getRGB(2), 1, m_texBuilding1);
+			else
+				m_Renderer->DrawTexturedRect(m_building[i]->getX(), m_building[i]->getY(), 0,
+					m_building[i]->getSize(), m_building[i]->getRGB(0), m_building[i]->getRGB(1), m_building[i]->getRGB(2), 1, m_texBuilding2);
+		}
 
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL)
 			m_Renderer->DrawSolidRect(m_character[i]->getX(), m_character[i]->getY(), 0,
 				m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1);
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_bullet[i] != NULL)
 			m_Renderer->DrawSolidRect(m_bullet[i]->getX(), m_bullet[i]->getY(), 0,
 				m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1);
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_arrow[i] != NULL)
 			m_Renderer->DrawSolidRect(m_arrow[i]->getX(), m_arrow[i]->getY(), 0,
 				m_arrow[i]->getSize(), m_arrow[i]->getRGB(0), m_arrow[i]->getRGB(1), m_arrow[i]->getRGB(2), 1);
@@ -144,45 +184,28 @@ void SceneMgr::DrawSolidRect()
 void SceneMgr::Collision()
 {
 	// 빌딩과 캐릭터
-	if (m_building != NULL) {
-		int sizeB = m_building->getSize() / 2;
+	for (int i = 0; i < 6; ++i)
+		if (m_building[i] != NULL)
+			for (int j = 0; j < MAX_CHARACTER_COUNT; ++j)
+				if (m_character[j] != NULL&&m_building[i]->getId() != m_character[j]->getId())
+				{
+					float size = m_building[i]->getSize() / 2;
+					float size1 = m_character[j]->getSize() / 2;
 
-		for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
-		{
-			bool isCol = false;
-
-			if (m_character[i] != NULL)
-			{
-				float sizeC = m_character[i]->getSize() / 2;
-
-				if (CollisionTest(m_building->getX() - sizeB, m_building->getY() - sizeB, m_building->getX() + sizeB, m_building->getY() + sizeB,
-					m_character[i]->getX() - sizeC, m_character[i]->getY() - sizeC, m_character[i]->getX() + sizeC, m_character[i]->getY() + sizeC))
-					isCol = true;
-			}
-
-			if (isCol)
-			{
-				//m_character[i]->setRGB(0, 1);
-				//m_character[i]->setRGB(1, 0);
-				//m_character[i]->setRGB(2, 0);
-				m_building->Collision(m_character[i]->getLife());
-				//m_character[i]->Collision(20);
-				delete m_character[i];
-				m_character[i] = NULL;
-			}
-			//else {
-			//	m_character[i]->setRGB(0, 1);
-			//	m_character[i]->setRGB(1, 1);
-			//	m_character[i]->setRGB(2, 1);
-			//}
-		}
-	}
+					if (CollisionTest(m_building[i]->getX() - size, m_building[i]->getY() - size, m_building[i]->getX() + size, m_building[i]->getY() + size,
+						m_character[j]->getX() - size1, m_character[j]->getY() - size1, m_character[j]->getX() + size1, m_character[j]->getY() + size1))
+					{
+						m_building[i]->Collision(m_character[j]->getLife());
+						delete m_character[j];
+						m_character[j] = NULL;
+					}
+				}
 
 	// 캐릭터와 총알
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL)
-			for (int j = 0; j < 100; ++j)
-				if (m_bullet[j] != NULL)
+			for (int j = 0; j < MAX_ATTACK_COUNT; ++j)
+				if (m_bullet[j] != NULL&&m_character[i]->getId() != m_bullet[j]->getId())
 				{
 					float size = m_character[i]->getSize() / 2;
 					float size1 = m_bullet[j]->getSize() / 2;
@@ -190,36 +213,35 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_character[i]->getX() - size, m_character[i]->getY() - size, m_character[i]->getX() + size, m_character[i]->getY() + size,
 						m_bullet[j]->getX() - size1, m_bullet[j]->getY() - size1, m_bullet[j]->getX() + size1, m_bullet[j]->getY() + size1))
 					{
-						m_character[i]->Collision(20);
+						m_character[i]->Collision(m_bullet[j]->getLife());
 						delete m_bullet[j];
 						m_bullet[j] = NULL;
 					}
 				}
 
 	// 빌딩과 화살
-	if (m_building != NULL) {
-		int sizeB = m_building->getSize() / 2;
-
-		for (int i = 0; i < 100; ++i)
-			if (m_arrow[i] != NULL)
-			{
-				float size1 = m_arrow[i]->getSize() / 2;
-
-				if (CollisionTest(m_building->getX() - sizeB, m_building->getY() - sizeB, m_building->getX() + sizeB, m_building->getY() + sizeB,
-					m_arrow[i]->getX() - size1, m_arrow[i]->getY() - size1, m_arrow[i]->getX() + size1, m_arrow[i]->getY() + size1))
+	for (int i = 0; i < 6; ++i)
+		if (m_building[i] != NULL)
+			for (int j = 0; j < MAX_ATTACK_COUNT; ++j)
+				if (m_arrow[j] != NULL&&m_building[i]->getId() != m_arrow[j]->getId())
 				{
-					m_building->Collision(10);
-					delete m_arrow[i];
-					m_arrow[i] = NULL;
+					float size = m_building[i]->getSize() / 2;
+					float size1 = m_arrow[j]->getSize() / 2;
+
+					if (CollisionTest(m_building[i]->getX() - size, m_building[i]->getY() - size, m_building[i]->getX() + size, m_building[i]->getY() + size,
+						m_arrow[j]->getX() - size1, m_arrow[j]->getY() - size1, m_arrow[j]->getX() + size1, m_arrow[j]->getY() + size1))
+					{
+						m_building[i]->Collision(m_arrow[j]->getLife());
+						delete m_arrow[j];
+						m_arrow[j] = NULL;
+					}
 				}
-			}
-	}
 
 	// 캐릭터와 화살
-	for (int i = 0; i < MAX_OBJECTS_COUNT; ++i)
+	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL)
 			for (int j = 0; j < 100; ++j)
-				if (m_arrow[j] != NULL&&m_arrow[j]->getArrowID() != i)
+				if (m_arrow[j] != NULL&&m_character[i]->getId() != m_arrow[j]->getId())
 				{
 					float size = m_character[i]->getSize() / 2;
 					float size1 = m_arrow[j]->getSize() / 2;
@@ -227,7 +249,7 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_character[i]->getX() - size, m_character[i]->getY() - size, m_character[i]->getX() + size, m_character[i]->getY() + size,
 						m_arrow[j]->getX() - size1, m_arrow[j]->getY() - size1, m_arrow[j]->getX() + size1, m_arrow[j]->getY() + size1))
 					{
-						m_character[i]->Collision(10);
+						m_character[i]->Collision(m_arrow[j]->getLife());
 						delete m_arrow[j];
 						m_arrow[j] = NULL;
 					}
@@ -246,12 +268,4 @@ bool SceneMgr::CollisionTest(float left, float bottom, float right, float top, f
 		return false;
 
 	return true;
-}
-
-bool SceneMgr::isBuilding()
-{
-	if (m_building != NULL)
-		return true;
-	else
-		return false;
 }

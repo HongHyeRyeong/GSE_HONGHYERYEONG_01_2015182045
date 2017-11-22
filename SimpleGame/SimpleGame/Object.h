@@ -3,19 +3,17 @@
 
 class Object
 {
-	int type;
+	int type, id;
 	float x, y;
 	float size;
 	float rgb[3];
 	float vX, vY;
 	float life, lifeTime;
-
-	int arrowID;
-	float arrowTime;
+	float attackTime;
 
 public:
 	Object() {};
-	Object(float x, float y, float size, int type);
+	Object(float x, float y, int type, int id);
 	~Object() {};
 
 	void Update(float elapsedTime);
@@ -27,11 +25,9 @@ public:
 	float getRGB(int i) { return rgb[i]; }
 	float getLife() { return life; }
 	float gerLifeTime() { return lifeTime; }
-	int getArrowID() { return arrowID; }
-	float getArrowTime() { return arrowTime; }
+	int getId() { return id; }
+	float getAttackTime() { return attackTime; }
 
-	void setRGB(int i, float j) { rgb[i] = j; }
-	void setArrowID(int i) { arrowID = i; }
-	void setArrowTime(float time) { arrowTime = time; }
+	void setAttackTime(float time) { attackTime = time; }
 };
 
