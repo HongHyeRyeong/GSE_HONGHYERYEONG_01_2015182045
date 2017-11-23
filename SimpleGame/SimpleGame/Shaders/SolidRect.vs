@@ -6,7 +6,9 @@ uniform vec4 u_Trans;
 void main()
 {
 	vec4 newPosition;
-	newPosition.xy = a_Position.xy*u_Trans.w + u_Trans.xy;
+	newPosition.x = a_Position.x;
+	newPosition.y = a_Position.y;
+	newPosition.xy = newPosition.xy*u_Trans.w + u_Trans.xy;
 	newPosition.z = 0;
 	newPosition.w= 1;
 	gl_Position = newPosition;

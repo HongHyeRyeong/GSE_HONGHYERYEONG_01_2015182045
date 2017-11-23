@@ -26,6 +26,7 @@ class SceneMgr
 	Object *m_arrow[MAX_ATTACK_COUNT];
 
 	GLuint m_texBuilding1, m_texBuilding2;
+	GLuint m_texChara1, m_texChara2;
 
 	float northTime, southTime;
 public:
