@@ -24,11 +24,20 @@ SceneMgr::SceneMgr()
 
 	m_texBuilding1 = m_Renderer->CreatePngTexture("./Resource/pizza.png");
 	m_texBuilding2 = m_Renderer->CreatePngTexture("./Resource/chicken.png");
-	m_texChara1 = m_Renderer->CreatePngTexture("./Resource/pizza2.png");
-	m_texChara2 = m_Renderer->CreatePngTexture("./Resource/chicken2.png");
+	m_texChara1 = m_Renderer->CreatePngTexture("./Resource/pizza3.png");
+	m_texChara2 = m_Renderer->CreatePngTexture("./Resource/chicken3.png");
+	m_texBack = m_Renderer->CreatePngTexture("./Resource/background.png");
+	m_texBull = m_Renderer->CreatePngTexture("./Resource/particle1.png");
 
-	northTime = 0;
-	southTime = 7;
+	northTime = 10;
+	southTime = 10;
+	texTime = 0;
+	bullTime = 0;
+
+	for (int i = 0; i < 2; ++i) {
+		m_texCha1Num[i] = 0;
+		m_texCha2Num[i] = 0;
+	}
 }
 
 SceneMgr::~SceneMgr()
@@ -108,12 +117,36 @@ void SceneMgr::Update(float elapsedTime)
 		northTime = 0;
 	}
 
+	// tex update
+	texTime += elapsedTime / 1000;
+	bullTime += elapsedTime / 1000;
+
+	if (texTime >= 0.1) {
+		if (m_texCha1Num[0] == 15)
+			m_texCha1Num[0] = 0;			
+		else		
+			m_texCha1Num[0]++;
+		//
+		if (m_texCha2Num[0] == 5) {
+			m_texCha2Num[0] = 0;
+			m_texCha2Num[1]++;
+		}
+		else
+			m_texCha2Num[0]++;
+
+		if (m_texCha2Num[0] == 5 && m_texCha2Num[1] == 3) {
+			m_texCha2Num[0] = 0;
+			m_texCha2Num[1] = 0;
+		}
+		texTime = 0;
+	}
+
 	// 오브젝트 업데이트
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL) {
 			m_building[i]->Update(elapsedTime);
 
-			if (m_building[i]->getAttackTime() >= 10) {
+			if (m_building[i]->getAttackTime() >= 2) {
 				Add(m_building[i]->getX(), m_building[i]->getY(), OBJECT_BULLET, m_building[i]->getId());
 				m_building[i]->setAttackTime(0);
 			}
@@ -171,6 +204,9 @@ void SceneMgr::Update(float elapsedTime)
 
 void SceneMgr::DrawSolidRect()
 {
+	m_Renderer->DrawTexturedRect(0, fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
+	m_Renderer->DrawTexturedRect(0, -fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
+
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL) {
 			if (m_building[i]->getId() == 1) {
@@ -189,21 +225,26 @@ void SceneMgr::DrawSolidRect()
 	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL) {
 			if (m_character[i]->getId() == 1) {
-				m_Renderer->DrawTexturedRect(m_character[i]->getX(), m_character[i]->getY(), 0,
-					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara1, 0.2);
-				m_Renderer->DrawSolidRectGauge(m_character[i]->getX(), m_character[i]->getY() + 20, 0, 40, 5, 1, 0, 0, 1, m_character[i]->getLife() / 100, 0.2);
+				m_Renderer->DrawTexturedRectSeq(m_character[i]->getX(), m_character[i]->getY(), 0,
+					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara1, m_texCha1Num[0], m_texCha1Num[1], 14, 1, 0.2);
+				m_Renderer->DrawSolidRectGauge(m_character[i]->getX(), m_character[i]->getY() + m_character[i]->getSize() / 2, 0, 40, 5, 1, 0, 0, 1, m_character[i]->getLife() / 100, 0.2);
 			}
 			else {
-				m_Renderer->DrawTexturedRect(m_character[i]->getX(), m_character[i]->getY(), 0,
-					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara2, 0.2);
-				m_Renderer->DrawSolidRectGauge(m_character[i]->getX(), m_character[i]->getY() + 20, 0, 40, 5, 0, 0, 1, 1, m_character[i]->getLife() / 100, 0.2);
+				m_Renderer->DrawTexturedRectSeq(m_character[i]->getX(), m_character[i]->getY(), 0,
+					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara2, m_texCha2Num[0], m_texCha2Num[1], 6, 4, 0.2);
+				m_Renderer->DrawSolidRectGauge(m_character[i]->getX(), m_character[i]->getY() + m_character[i]->getSize() / 2, 0, 40, 5, 0, 0, 1, 1, m_character[i]->getLife() / 100, 0.2);
 			}
 		}
 
 	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
-		if (m_bullet[i] != NULL)
-			m_Renderer->DrawSolidRect(m_bullet[i]->getX(), m_bullet[i]->getY(), 0,
-				m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1, 0.3);
+		if (m_bullet[i] != NULL) {
+			if (m_bullet[i]->getId() == 1)
+				m_Renderer->DrawParticle(m_bullet[i]->getX(), m_bullet[i]->getY(), 0,
+					m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1, 0, 1, m_texBull, bullTime);
+			else
+				m_Renderer->DrawParticle(m_bullet[i]->getX(), m_bullet[i]->getY(), 0,
+					m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1, 0, -1, m_texBull, bullTime);
+		}
 
 	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_arrow[i] != NULL)

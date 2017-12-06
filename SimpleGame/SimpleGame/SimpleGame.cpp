@@ -36,7 +36,7 @@ void Idle(void)
 void MouseInput(int button, int state, int x, int y)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		if (windowH / 2 < y&&mgr->getSouthTime() >= 7)
+		if (windowH / 2 < y&&mgr->getSouthTime() >= 3)
 			mgr->Add(x - windowW / 2, windowH / 2 - y, OBJECT_CHARACTER, 2);
 	}
 

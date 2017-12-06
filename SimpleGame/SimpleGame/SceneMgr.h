@@ -25,10 +25,16 @@ class SceneMgr
 	Object *m_bullet[MAX_ATTACK_COUNT];
 	Object *m_arrow[MAX_ATTACK_COUNT];
 
+	GLuint m_texBack;
 	GLuint m_texBuilding1, m_texBuilding2;
 	GLuint m_texChara1, m_texChara2;
+	GLuint m_texBull;
+
+	int m_texCha1Num[2];
+	int m_texCha2Num[2];
 
 	float northTime, southTime;
+	float texTime, bullTime;
 public:
 	SceneMgr();
 	~SceneMgr();
