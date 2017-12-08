@@ -4,6 +4,7 @@
 #include <random>
 #include "Object.h"
 #include "Renderer.h"
+#include "Sound.h"
 using namespace std;
 
 #define MAX_CHARACTER_COUNT 10
@@ -29,12 +30,14 @@ class SceneMgr
 	GLuint m_texBuilding1, m_texBuilding2;
 	GLuint m_texChara1, m_texChara2;
 	GLuint m_texBull;
-
 	int m_texCha1Num[2];
 	int m_texCha2Num[2];
 
 	float northTime, southTime;
 	float texTime, bullTime;
+
+	Sound *m_sound;
+	int soundBG;
 public:
 	SceneMgr();
 	~SceneMgr();

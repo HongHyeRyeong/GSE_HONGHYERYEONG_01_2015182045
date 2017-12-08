@@ -38,6 +38,10 @@ SceneMgr::SceneMgr()
 		m_texCha1Num[i] = 0;
 		m_texCha2Num[i] = 0;
 	}
+
+	m_sound = new Sound();
+	soundBG = m_sound->CreateSound("./Dependencies/SoundSamples/ophelia.mp3");
+	m_sound->PlaySound(soundBG, true, 0.2f);
 }
 
 SceneMgr::~SceneMgr()
@@ -204,6 +208,8 @@ void SceneMgr::Update(float elapsedTime)
 
 void SceneMgr::DrawSolidRect()
 {
+	//m_Renderer->SetSceneTransform(10, 0, 1, 1);
+
 	m_Renderer->DrawTexturedRect(0, fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
 	m_Renderer->DrawTexturedRect(0, -fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
 
@@ -250,6 +256,8 @@ void SceneMgr::DrawSolidRect()
 		if (m_arrow[i] != NULL)
 			m_Renderer->DrawSolidRect(m_arrow[i]->getX(), m_arrow[i]->getY(), 0,
 				m_arrow[i]->getSize(), m_arrow[i]->getRGB(0), m_arrow[i]->getRGB(1), m_arrow[i]->getRGB(2), 1, 0.3);
+
+	m_Renderer->DrawText(0, 0, GLUT_BITMAP_9_BY_15, 0.0, 0.0, 0.0, "2015182045 HyeRyeong");
 }
 
 void SceneMgr::Collision()

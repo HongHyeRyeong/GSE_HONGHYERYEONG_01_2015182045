@@ -17,26 +17,27 @@ Object::Object(float x, float y, int type, int id) :x(x), y(y), type(type), id(i
 	}
 	else if (type == OBJECT_CHARACTER) {
 		life = 100;
-		vX = 300.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
-		vY = 300.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
-
-		if (id == 1) {
-			size = 80;
-		}
-		else if (id == 2) {
-			size = 60;
-		}
+		vX = 100.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+		vY = 200.f *((float)std::rand() / (float)RAND_MAX);
 
 		rgb[0] = 1;
 		rgb[1] = 1;
 		rgb[2] = 1;
+
+		if (id == 1) {
+			size = 80;
+			vY = -vY;
+		}
+		else if (id == 2) {
+			size = 60;
+		}
 	}
 	else if (type == OBJECT_BULLET) {
 		life = 15;
-		vX = 600.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+		vX = 400.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
 		vY = 600.f *((float)std::rand() / (float)RAND_MAX);
 
-		size = 8;
+		size = 6;
 
 		if (id == 1) {
 			rgb[0] = 1;
