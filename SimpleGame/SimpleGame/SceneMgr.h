@@ -34,7 +34,7 @@ class SceneMgr
 	int m_texCha2Num[2];
 
 	float northTime, southTime;
-	float texTime, bullTime;
+	float texTime, weatherTime;
 
 	Sound *m_sound;
 	int soundBG;

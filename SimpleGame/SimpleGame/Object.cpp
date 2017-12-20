@@ -34,8 +34,9 @@ Object::Object(float x, float y, int type, int id) :x(x), y(y), type(type), id(i
 	}
 	else if (type == OBJECT_BULLET) {
 		life = 15;
-		vX = 400.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
-		vY = 600.f *((float)std::rand() / (float)RAND_MAX);
+		lifeTime = 0.0;
+		vX = 200.f *(((float)std::rand() / (float)RAND_MAX) - 0.5f);
+		vY = 300.f *((float)std::rand() / (float)RAND_MAX);
 
 		size = 6;
 
@@ -87,9 +88,14 @@ void Object::Update(float elapsedTime)
 			life = 0;
 	}
 
-	x += vX*time;
-	y += vY*time;
+	x += vX * time;
+	y += vY * time;
 
-	//lifeTime -= elapsedTime;
+	if (type == OBJECT_BULLET) {
+		lifeTime += time;
+
+		if (lifeTime >= 2)
+			life = 0;
+	}
 	attackTime += time;
 }

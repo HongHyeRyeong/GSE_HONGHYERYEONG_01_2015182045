@@ -32,7 +32,7 @@ SceneMgr::SceneMgr()
 	northTime = 10;
 	southTime = 10;
 	texTime = 0;
-	bullTime = 0;
+	weatherTime = 0;
 
 	for (int i = 0; i < 2; ++i) {
 		m_texCha1Num[i] = 0;
@@ -111,7 +111,7 @@ void SceneMgr::Update(float elapsedTime)
 	northTime += elapsedTime / 1000;
 	southTime += elapsedTime / 1000;
 
-	if (northTime >= 5) {
+	if (northTime >= 3) {
 		random_device rd;
 		mt19937_64 rng(rd());
 		uniform_int_distribution<> uiX(-200, 200);
@@ -123,7 +123,7 @@ void SceneMgr::Update(float elapsedTime)
 
 	// tex update
 	texTime += elapsedTime / 1000;
-	bullTime += elapsedTime / 1000;
+	weatherTime += elapsedTime / 1000;
 
 	if (texTime >= 0.1) {
 		if (m_texCha1Num[0] == 15)
@@ -213,6 +213,7 @@ void SceneMgr::DrawSolidRect()
 	m_Renderer->DrawTexturedRect(0, fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
 	m_Renderer->DrawTexturedRect(0, -fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
 
+
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL) {
 			if (m_building[i]->getId() == 1) {
@@ -246,10 +247,10 @@ void SceneMgr::DrawSolidRect()
 		if (m_bullet[i] != NULL) {
 			if (m_bullet[i]->getId() == 1)
 				m_Renderer->DrawParticle(m_bullet[i]->getX(), m_bullet[i]->getY(), 0,
-					m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1, 0, 1, m_texBull, bullTime);
+					m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1 - m_bullet[i]->gerLifeTime() / 3, 0, 1, m_texBull, m_bullet[i]->gerLifeTime(), 0.3);
 			else
 				m_Renderer->DrawParticle(m_bullet[i]->getX(), m_bullet[i]->getY(), 0,
-					m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1, 0, -1, m_texBull, bullTime);
+					m_bullet[i]->getSize(), m_bullet[i]->getRGB(0), m_bullet[i]->getRGB(1), m_bullet[i]->getRGB(2), 1 - m_bullet[i]->gerLifeTime() / 2, 0, -1, m_texBull, m_bullet[i]->gerLifeTime(), 0.3);
 		}
 
 	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
@@ -258,6 +259,8 @@ void SceneMgr::DrawSolidRect()
 				m_arrow[i]->getSize(), m_arrow[i]->getRGB(0), m_arrow[i]->getRGB(1), m_arrow[i]->getRGB(2), 1, 0.3);
 
 	m_Renderer->DrawText(0, 0, GLUT_BITMAP_9_BY_15, 0.0, 0.0, 0.0, "2015182045 HyeRyeong");
+
+	m_Renderer->DrawParticleClimate(0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.1, m_texBull, weatherTime, 0.01);
 }
 
 void SceneMgr::Collision()

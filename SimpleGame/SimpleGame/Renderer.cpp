@@ -4,6 +4,11 @@
 
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
+	m_ParticleCount = 100;
+	m_ParticleVertexCount = m_ParticleCount * 2 * 3;
+	m_ParticleCloudCount = 1000;
+	m_ParticleCloudVertexCount = m_ParticleCloudCount * 2 * 3;
+
 	Initialize(windowSizeX, windowSizeY);
 }
 
@@ -57,13 +62,14 @@ void Renderer::ReleaseAllResources()
 		glDeleteShader(m_ParticleWithTextureShader);
 	}
 
-	std::map<GLuint, GLuint>::iterator iter;
-
-	for (iter = m_TextureList.begin(); iter != m_TextureList.end(); ++iter)
+	for (int i=0; i<MAX_TEXTURES; i++)
 	{
-		glDeleteTextures(1, &iter->first);
+		if (m_textureList[i] != 0)
+		{
+			glDeleteTextures(1, &m_textureList[i]);
+			m_textureList[i] = 0;
+		}
 	}
-	m_TextureList.clear();
 }
 
 void Renderer::Initialize(int windowSizeX, int windowSizeY)
@@ -90,6 +96,19 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	{
 		m_Initialized = true;
 	}
+
+	for (int i = 0; i < MAX_TEXTURES; i++)
+	{
+		m_textureList[i] = 0;
+	}
+
+	bool bHint = true;
+
+	glEnable(GL_POINT_SMOOTH);
+	glEnable(GL_LINE_SMOOTH);
+	glHint(GL_POINT_SMOOTH_HINT, bHint ? GL_NICEST : GL_FASTEST);
+	glHint(GL_LINE_SMOOTH_HINT, bHint ? GL_NICEST : GL_FASTEST);
+	glHint(GL_POLYGON_SMOOTH_HINT, bHint ? GL_NICEST : GL_FASTEST);
 }
 
 bool Renderer::IsInitialized()
@@ -113,9 +132,18 @@ GLuint Renderer::CreatePngTexture(char * filePath)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 
-	m_TextureList.insert(std::pair<GLuint, GLuint>(temp, temp));
+	GLuint index = 0;
+	for (GLuint i = 0; i < MAX_TEXTURES; i++)
+	{
+		if (m_textureList[i] == 0)
+		{
+			m_textureList[i] = temp;
+			index = i;
+			break;
+		}
+	}
 
-	return temp;
+	return index;
 }
 
 GLuint Renderer::CreateBmpTexture(char * filePath)
@@ -132,16 +160,27 @@ GLuint Renderer::CreateBmpTexture(char * filePath)
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, &rawImage[0]);
 
-	m_TextureList.insert(std::pair<GLuint, GLuint>(temp, temp));
+	GLuint index = 0;
+	for (GLuint i = 0; i < MAX_TEXTURES; i++)
+	{
+		if (m_textureList[i] == 0)
+		{
+			m_textureList[i] = temp;
+			index = i;
+			break;
+		}
+	}
 
-	return temp;
+	return index;
 }
 
 void Renderer::DeleteTexture(GLuint textureID)
 {
-	m_TextureList.erase(textureID);
-
-	glDeleteTextures(1, &textureID);
+	if (m_textureList[textureID] != 0)
+	{
+		glDeleteTextures(1, &m_textureList[textureID]);
+		m_textureList[textureID] = 0;
+	}	
 }
 
 void Renderer::CreateVertexBufferObjects()
@@ -190,6 +229,7 @@ void Renderer::CreateVertexBufferObjects()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rectBorder), rectBorder, GL_STATIC_DRAW);
 
 	CreateParticleVBO();
+	CreateParticleCloudVBO();
 }
 
 void Renderer::CreateParticleVBO()
@@ -211,13 +251,13 @@ void Renderer::CreateParticleVBO()
 		float randomValueY = 0.f;
 		float randomValueZ = 0.f;
 		float randomStartTime = 0.f;
-		float velocityScale = 0.5f;
+		float velocityScale = 0.1f;
 		float randomSize = 1.f;
 
 		randomValueX = (rand() / (float)RAND_MAX - 0.5)*velocityScale;
 		randomValueY = (rand() / (float)RAND_MAX - 0.5)*velocityScale;
-		randomValueZ = 0.f;
-		randomStartTime = (rand() / (float)RAND_MAX)*20.f;
+		randomValueZ = 1.f;
+		randomStartTime = (rand() / (float)RAND_MAX)*1.f;
 		randomSize = (rand() / (float)RAND_MAX)*3.f;
 
 		particleVertices[particleVertIndex] = -particleSize / 2.f + particleInitPosX; 
@@ -226,7 +266,7 @@ void Renderer::CreateParticleVBO()
 		particleVertices[particleVertIndex] = -particleSize / 2.f + particleInitPosY;
 		particleVertices[particleVertIndex] *= randomSize;
 		particleVertIndex++;
-		particleVertices[particleVertIndex] = 0.f;
+		particleVertices[particleVertIndex] = randomValueZ;
 		particleVertIndex++;
 		particleVertices[particleVertIndex] = 0.f;
 		particleVertIndex++;
@@ -247,7 +287,7 @@ void Renderer::CreateParticleVBO()
 		particleVertices[particleVertIndex] = -particleSize / 2.f + particleInitPosY;
 		particleVertices[particleVertIndex] *= randomSize;
 		particleVertIndex++;
-		particleVertices[particleVertIndex] = 0.f;
+		particleVertices[particleVertIndex] = randomValueZ;
 		particleVertIndex++;
 		particleVertices[particleVertIndex] = 1.f;
 		particleVertIndex++;
@@ -268,7 +308,7 @@ void Renderer::CreateParticleVBO()
 		particleVertices[particleVertIndex] = particleSize / 2.f + particleInitPosY;
 		particleVertices[particleVertIndex] *= randomSize;
 		particleVertIndex++;
-		particleVertices[particleVertIndex] = 0.f;
+		particleVertices[particleVertIndex] = randomValueZ;
 		particleVertIndex++;
 		particleVertices[particleVertIndex] = 1.f;
 		particleVertIndex++;
@@ -289,7 +329,7 @@ void Renderer::CreateParticleVBO()
 		particleVertices[particleVertIndex] = -particleSize / 2.f + particleInitPosY;
 		particleVertices[particleVertIndex] *= randomSize;
 		particleVertIndex++;
-		particleVertices[particleVertIndex] = 0.f;
+		particleVertices[particleVertIndex] = randomValueZ;
 		particleVertIndex++;
 		particleVertices[particleVertIndex] = 0.f;
 		particleVertIndex++;
@@ -310,7 +350,7 @@ void Renderer::CreateParticleVBO()
 		particleVertices[particleVertIndex] = particleSize / 2.f + particleInitPosY;
 		particleVertices[particleVertIndex] *= randomSize;
 		particleVertIndex++;
-		particleVertices[particleVertIndex] = 0.f;
+		particleVertices[particleVertIndex] = randomValueZ;
 		particleVertIndex++;
 		particleVertices[particleVertIndex] = 1.f;
 		particleVertIndex++;
@@ -331,7 +371,7 @@ void Renderer::CreateParticleVBO()
 		particleVertices[particleVertIndex] = particleSize / 2.f + particleInitPosY;
 		particleVertices[particleVertIndex] *= randomSize;
 		particleVertIndex++;
-		particleVertices[particleVertIndex] = 0.f;
+		particleVertices[particleVertIndex] = randomValueZ;
 		particleVertIndex++;
 		particleVertices[particleVertIndex] = 0.f;
 		particleVertIndex++;
@@ -349,6 +389,157 @@ void Renderer::CreateParticleVBO()
 
 	glGenBuffers(1, &m_VBOParticles);
 	glBindBuffer(GL_ARRAY_BUFFER, m_VBOParticles);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*particleFloatCount, particleVertices, GL_STATIC_DRAW);
+}
+
+void Renderer::CreateParticleCloudVBO()
+{
+	int particleCount = m_ParticleCloudCount;
+	float particleSize = 1.f / m_WindowSizeX;
+	float particleInitPosX = 0.0f;
+	float particleInitPosY = 0.0f;
+
+	float* particleVertices = new float[particleCount * 2 * 3 * (3 + 2 + 4)];
+	int particleFloatCount = particleCount * 2 * 3 * (3 + 2 + 4);
+	m_ParticleCloudVertexCount = particleCount * 2 * 3;
+
+	int particleVertIndex = 0;
+
+	for (int i = 0; i < particleCount; i++)
+	{
+		float randomValueX = 0.f;
+		float randomValueY = 0.f;
+		float randomValueZ = 0.f;
+		float randomStartTime = 0.f;
+		float velocityScale = 0.1f;
+		float randomSize = 1.f;
+
+		particleInitPosX = ((float)rand() / (float)RAND_MAX - 0.5f)*2.5f;
+		particleInitPosY = ((float)rand() / (float)RAND_MAX - 0.5f)*2.5f;
+
+		randomValueX = 0;// (rand() / (float)RAND_MAX - 0.5)*velocityScale;
+		randomValueY = 0;// (rand() / (float)RAND_MAX - 0.5)*velocityScale;
+		randomValueZ = 1.f;
+		randomStartTime = (((float)rand() / (float)RAND_MAX))*6.f;
+		randomSize = std::fmax((rand() / (float)RAND_MAX)*15.f, 8.f);
+
+		particleVertices[particleVertIndex] = -particleSize * randomSize / 2.f + particleInitPosX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = -particleSize * randomSize / 2.f + particleInitPosY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 0.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 0.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomStartTime;
+		particleVertIndex++;
+
+		particleVertices[particleVertIndex] = particleSize * randomSize / 2.f + particleInitPosX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = -particleSize * randomSize / 2.f + particleInitPosY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 1.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 0.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomStartTime;
+		particleVertIndex++;
+
+		particleVertices[particleVertIndex] = particleSize * randomSize / 2.f + particleInitPosX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = particleSize * randomSize / 2.f + particleInitPosY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 1.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 1.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomStartTime;
+		particleVertIndex++;
+
+		particleVertices[particleVertIndex] = -particleSize * randomSize / 2.f + particleInitPosX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = -particleSize * randomSize / 2.f + particleInitPosY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 0.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 0.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomStartTime;
+		particleVertIndex++;
+
+		particleVertices[particleVertIndex] = particleSize * randomSize / 2.f + particleInitPosX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = particleSize * randomSize / 2.f + particleInitPosY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 1.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 1.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomStartTime;
+		particleVertIndex++;
+
+		particleVertices[particleVertIndex] = -particleSize * randomSize / 2.f + particleInitPosX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = particleSize * randomSize / 2.f + particleInitPosY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 0.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = 1.f;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueX;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueY;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomValueZ;
+		particleVertIndex++;
+		particleVertices[particleVertIndex] = randomStartTime;
+		particleVertIndex++;
+	}
+
+	glGenBuffers(1, &m_VBOParticleCloud);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBOParticleCloud);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*particleFloatCount, particleVertices, GL_STATIC_DRAW);
 }
 
@@ -600,6 +791,8 @@ void Renderer::DrawBorderXY(float x, float y, float z, float width, float height
 
 void Renderer::DrawTexturedRect(float x, float y, float z, float size, float r, float g, float b, float a, GLuint texID, float level)
 {
+	GLuint tID = m_textureList[texID];
+
 	float newX, newY;
 
 	GetGLPosition(x, y, &newX, &newY);
@@ -632,7 +825,7 @@ void Renderer::DrawTexturedRect(float x, float y, float z, float size, float r, 
 	glVertexAttribPointer(attribTexPosition, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, tID);
 	GLuint u_Texture = glGetUniformLocation(shader, "u_Texture");
 	glUniform1i(u_Texture, 0);
 
@@ -644,6 +837,8 @@ void Renderer::DrawTexturedRect(float x, float y, float z, float size, float r, 
 
 void Renderer::DrawTexturedRectSeq(float x, float y, float z, float size, float r, float g, float b, float a, GLuint texID, int currSeqX, int currSeqY, int totalSeqX, int totalSeqY, float level)
 {
+	GLuint tID = m_textureList[texID];
+
 	float newX, newY;
 
 	GetGLPosition(x, y, &newX, &newY);
@@ -684,7 +879,7 @@ void Renderer::DrawTexturedRectSeq(float x, float y, float z, float size, float 
 	glVertexAttribPointer(attribTexPosition, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, tID);
 	GLuint u_Texture = glGetUniformLocation(shader, "u_Texture");
 	glUniform1i(u_Texture, 0);
 
@@ -696,6 +891,8 @@ void Renderer::DrawTexturedRectSeq(float x, float y, float z, float size, float 
 
 void Renderer::DrawTexturedRectXY(float x, float y, float z, float width, float height, float r, float g, float b, float a, GLuint texID, float level)
 {
+	GLuint tID = m_textureList[texID];
+
 	float newX, newY;
 
 	GetGLPosition(x, y, &newX, &newY);
@@ -728,7 +925,7 @@ void Renderer::DrawTexturedRectXY(float x, float y, float z, float width, float 
 	glVertexAttribPointer(attribTexPosition, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, tID);
 	GLuint u_Texture = glGetUniformLocation(shader, "u_Texture");
 	glUniform1i(u_Texture, 0);
 
@@ -740,6 +937,8 @@ void Renderer::DrawTexturedRectXY(float x, float y, float z, float width, float 
 
 void Renderer::DrawTexturedRectSeqXY(float x, float y, float z, float width, float height, float r, float g, float b, float a, GLuint texID, int currSeqX, int currSeqY, int totalSeqX, int totalSeqY, float level)
 {
+	GLuint tID = m_textureList[texID];
+
 	float newX, newY;
 
 	GetGLPosition(x, y, &newX, &newY);
@@ -780,7 +979,7 @@ void Renderer::DrawTexturedRectSeqXY(float x, float y, float z, float width, flo
 	glVertexAttribPointer(attribTexPosition, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, tID);
 	GLuint u_Texture = glGetUniformLocation(shader, "u_Texture");
 	glUniform1i(u_Texture, 0);
 
@@ -790,8 +989,10 @@ void Renderer::DrawTexturedRectSeqXY(float x, float y, float z, float width, flo
 	glDisableVertexAttribArray(attribTexPosition);
 }
 
-void Renderer::DrawParticle(float x, float y, float z, float size, float r, float g, float b, float a, float gDirX, float gDirY, GLuint texID, float timeInSeconds)
+void Renderer::DrawParticle(float x, float y, float z, float size, float r, float g, float b, float a, float gDirX, float gDirY, GLuint texID, float timeInSeconds, float level)
 {
+	GLuint tID = m_textureList[texID];
+
 	float newX, newY;
 
 	GetGLPosition(x, y, &newX, &newY);
@@ -804,7 +1005,9 @@ void Renderer::DrawParticle(float x, float y, float z, float size, float r, floa
 	//Enable alpha blend
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_FALSE);
 
 	int attribPosition = glGetAttribLocation(shader, "a_Position");
 	int attribTexPos = glGetAttribLocation(shader, "a_TexPos");
@@ -825,6 +1028,8 @@ void Renderer::DrawParticle(float x, float y, float z, float size, float r, floa
 	GLuint u_Trans = glGetUniformLocation(shader, "u_Trans");
 	GLuint u_Color = glGetUniformLocation(shader, "u_Color");
 	GLuint u_TrailDir = glGetUniformLocation(shader, "u_TrailDir");
+	glUniform1f(glGetUniformLocation(shader, "u_Depth"), level);
+	glUniform1f(glGetUniformLocation(shader, "u_MaxTime"), 1);
 
 	glUniform1f(uniformElapsedTime, timeInSeconds);
 	glUniform1i(uniformTexture, 0);
@@ -833,13 +1038,75 @@ void Renderer::DrawParticle(float x, float y, float z, float size, float r, floa
 	glUniform3f(u_TrailDir, gDirX, gDirY, 0);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	glBindTexture(GL_TEXTURE_2D, tID);
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleVertexCount);
 
 	glDisableVertexAttribArray(attribPosition);
 	glDisableVertexAttribArray(attribTexPos);
 	glDisableVertexAttribArray(attribVelocity);
+
+	glDepthMask(GL_TRUE);
+}
+
+void Renderer::DrawParticleClimate(float x, float y, float z, float size, float r, float g, float b, float a, float gDirX, float gDirY, GLuint texID, float timeInSeconds, float level)
+{
+	GLuint tID = m_textureList[texID];
+
+	float newX, newY;
+
+	GetGLPosition(x, y, &newX, &newY);
+
+	GLuint shader = m_ParticleWithTextureShader;
+
+	//Program select
+	glUseProgram(shader);
+
+	//Enable alpha blend
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_FALSE);
+
+	int attribPosition = glGetAttribLocation(shader, "a_Position");
+	int attribTexPos = glGetAttribLocation(shader, "a_TexPos");
+	int attribVelocity = glGetAttribLocation(shader, "a_Velocity");
+
+	glEnableVertexAttribArray(attribPosition);
+	glEnableVertexAttribArray(attribTexPos);
+	glEnableVertexAttribArray(attribVelocity);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBOParticleCloud);
+
+	glVertexAttribPointer(attribPosition, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 9, 0);
+	glVertexAttribPointer(attribTexPos, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 9, (GLvoid*)(sizeof(float) * 3));
+	glVertexAttribPointer(attribVelocity, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 9, (GLvoid*)(sizeof(float) * 5));
+
+	GLuint uniformElapsedTime = glGetUniformLocation(shader, "u_ElapsedTime");
+	GLuint uniformTexture = glGetUniformLocation(shader, "u_Texture");
+	GLuint u_Trans = glGetUniformLocation(shader, "u_Trans");
+	GLuint u_Color = glGetUniformLocation(shader, "u_Color");
+	GLuint u_TrailDir = glGetUniformLocation(shader, "u_TrailDir");
+	glUniform1f(glGetUniformLocation(shader, "u_Depth"), level);
+	glUniform1f(glGetUniformLocation(shader, "u_MaxTime"), 6.f);
+
+	glUniform1f(uniformElapsedTime, timeInSeconds);
+	glUniform1i(uniformTexture, 0);
+	glUniform4f(u_Trans, newX, newY, size*m_sceneScaleX, size*m_sceneScaleY);
+	glUniform4f(u_Color, r, g, b, a);
+	glUniform3f(u_TrailDir, gDirX, gDirY, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tID);
+
+	glDrawArrays(GL_TRIANGLES, 0, m_ParticleCloudVertexCount);
+
+	glDisableVertexAttribArray(attribPosition);
+	glDisableVertexAttribArray(attribTexPos);
+	glDisableVertexAttribArray(attribVelocity);
+
+	glDepthMask(GL_TRUE);
 }
 
 void Renderer::DrawText(float x, float y, void* font, float r, float g, float b, char* text)

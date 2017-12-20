@@ -1,13 +1,12 @@
 #pragma once
 
-#include <string>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <map>
 
 #include "Dependencies\glew.h"
 #include "Dependencies\freeglut.h"
+
+#define MAX_TEXTURES 200
 
 class Renderer
 {
@@ -24,7 +23,8 @@ public:
 	void DrawTexturedRectSeqXY(float x, float y, float z, float sizeX, float sizeY, float r, float g, float b, float a, GLuint texID, int currSeqX, int currSeqY, int totalSeqX, int totalSeqY, float level);
 	void DrawTexturedRect(float x, float y, float z, float size, float r, float g, float b, float a, GLuint texID, float level);
 	void DrawTexturedRectSeq(float x, float y, float z, float size, float r, float g, float b, float a, GLuint texID, int currSeqX, int currSeqY, int totalSeqX, int totalSeqY, float level);
-	void DrawParticle(float x, float y, float z, float size, float r, float g, float b, float a, float gDirX, float gDirY, GLuint texID, float timeInSeconds);
+	void DrawParticle(float x, float y, float z, float size, float r, float g, float b, float a, float gDirX, float gDirY, GLuint texID, float timeInSeconds, float level);
+	void DrawParticleClimate(float x, float y, float z, float size, float r, float g, float b, float a, float gDirX, float gDirY, GLuint texID, float timeInSeconds, float level);
 	void DrawText(float x, float y, void* font, float r, float g, float b, char* text);
 	void SetSceneTransform(float x, float y, float scaleX, float scaleY);
 
@@ -41,6 +41,7 @@ private:
 	GLuint CompileShaders(char* filenameVS, char* filenameFS);
 	void CreateVertexBufferObjects();
 	void CreateParticleVBO();
+	void CreateParticleCloudVBO();
 	void GetGLPosition(float x, float y, float *newX, float *newY);
 	void ReleaseAllResources();
 
@@ -53,6 +54,7 @@ private:
 	GLuint m_VBORectTex = 0;
 	GLuint m_VBORectBorder = 0;
 	GLuint m_VBOParticles = 0;
+	GLuint m_VBOParticleCloud = 0;
 
 	GLuint m_SolidRectShader = 0; 
 	GLuint m_SolidRectGaugeShader = 0;
@@ -66,9 +68,11 @@ private:
 	float m_sceneScaleX = 1;
 	float m_sceneScaleY = 1;
 
-	std::map<GLuint, GLuint> m_TextureList;
+	GLuint m_textureList[MAX_TEXTURES];
 
-	int m_ParticleCount = 100;
-	int m_ParticleVertexCount = m_ParticleCount * 2 * 3;
+	int m_ParticleCount;
+	int m_ParticleVertexCount;
+	int m_ParticleCloudCount;
+	int m_ParticleCloudVertexCount;
 };
 
