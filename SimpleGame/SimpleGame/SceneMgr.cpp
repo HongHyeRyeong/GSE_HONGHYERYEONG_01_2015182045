@@ -7,12 +7,12 @@ SceneMgr::SceneMgr()
 	if (!m_Renderer->IsInitialized())
 		std::cout << "Renderer could not be initialized.. \n";
 
-	Add(-150, 300, OBJECT_BUILDING, 1);
-	Add(0, 300, OBJECT_BUILDING, 1);
-	Add(150, 300, OBJECT_BUILDING, 1);
-	Add(-150, -300, OBJECT_BUILDING, 2);
-	Add(0, -300, OBJECT_BUILDING, 2);
-	Add(150, -300, OBJECT_BUILDING, 2);
+	Add(-150, 250, 100, OBJECT_BUILDING, 1);
+	Add(0, 300, 130, OBJECT_BUILDING, 1);
+	Add(150, 250, 100, OBJECT_BUILDING, 1);
+	Add(-150, -250, 100, OBJECT_BUILDING, 2);
+	Add(0, -300, 130, OBJECT_BUILDING, 2);
+	Add(150, -250, 100, OBJECT_BUILDING, 2);
 
 	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		m_character[i] = NULL;
@@ -20,28 +20,40 @@ SceneMgr::SceneMgr()
 	for (int i = 0; i < MAX_ATTACK_COUNT; ++i) {
 		m_bullet[i] = NULL;
 		m_arrow[i] = NULL;
+		m_explosion[i] = NULL;
 	}
-
-	m_texBuilding1 = m_Renderer->CreatePngTexture("./Resource/pizza.png");
-	m_texBuilding2 = m_Renderer->CreatePngTexture("./Resource/chicken.png");
-	m_texChara1 = m_Renderer->CreatePngTexture("./Resource/pizza3.png");
-	m_texChara2 = m_Renderer->CreatePngTexture("./Resource/chicken3.png");
-	m_texBack = m_Renderer->CreatePngTexture("./Resource/background.png");
-	m_texBull = m_Renderer->CreatePngTexture("./Resource/particle1.png");
 
 	northTime = 10;
 	southTime = 10;
-	texTime = 0;
 	weatherTime = 0;
+	shakeNum = 0;
+	shakeV = 1;
+	shakeTime = 0;
 
-	for (int i = 0; i < 2; ++i) {
-		m_texCha1Num[i] = 0;
-		m_texCha2Num[i] = 0;
-	}
+	m_texBack[0] = m_Renderer->CreatePngTexture("./Resource/배경1.png");
+	m_texBack[1] = m_Renderer->CreatePngTexture("./Resource/배경2.png");
+	m_texBuilding1[0] = m_Renderer->CreatePngTexture("./Resource/빌딩1.png");
+	m_texBuilding1[1] = m_Renderer->CreatePngTexture("./Resource/빌딩3.png");
+	m_texBuilding1[2] = m_Renderer->CreatePngTexture("./Resource/빌딩2.png");
+	m_texBuilding2[0] = m_Renderer->CreatePngTexture("./Resource/집1.png");
+	m_texBuilding2[1] = m_Renderer->CreatePngTexture("./Resource/집2.png");
+	m_texBuilding2[2] = m_Renderer->CreatePngTexture("./Resource/집3.png");
+	m_texChara1 = m_Renderer->CreatePngTexture("./Resource/기계.png");
+	m_texChara2 = m_Renderer->CreatePngTexture("./Resource/동물.png");
+	m_texArrow1 = m_Renderer->CreatePngTexture("./Resource/전기.png");
+	m_texArrow2 = m_Renderer->CreatePngTexture("./Resource/꽃.png");
+	m_texBull = m_Renderer->CreatePngTexture("./Resource/particle1.png");
+	m_texExplosion = m_Renderer->CreatePngTexture("./Resource/폭발.png");
 
-	m_sound = new Sound();
-	soundBG = m_sound->CreateSound("./Dependencies/SoundSamples/ophelia.mp3");
-	m_sound->PlaySound(soundBG, true, 0.2f);
+	m_soundBG = new Sound();
+	soundBG = m_soundBG->CreateSound("./Dependencies/SoundSamples/Hackbeat.mp3");
+	m_soundBG->PlaySound(soundBG, true, 0.4f);
+	m_soundEffect = new Sound();
+	soundEffect = m_soundEffect->CreateSound("./Dependencies/SoundSamples/explosion.wav");
+	m_soundEffect2 = new Sound();
+	soundEffect2 = m_soundEffect2->CreateSound("./Dependencies/SoundSamples/Throwing fireball.wav");
+	m_soundEffect3 = new Sound();
+	soundEffect3 = m_soundEffect3->CreateSound("./Dependencies/SoundSamples/193.wav");
 }
 
 SceneMgr::~SceneMgr()
@@ -62,44 +74,57 @@ SceneMgr::~SceneMgr()
 		if (m_arrow[i] != NULL)
 			delete m_arrow[i];
 
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
+		if (m_explosion[i] != NULL)
+			delete m_explosion[i];
+
 	delete m_Renderer;
 	delete[] m_building;
 	delete[] m_character;
 	delete[] m_bullet;
 	delete[] m_arrow;
+	delete[] m_explosion;
 }
 
-void SceneMgr::Add(float x, float y, int type, int id)
+void SceneMgr::Add(float x, float y, float size, int type, int id)
 {
 	if (type == OBJECT_BUILDING) {
 		for (int i = 0; i < 6; ++i)
 			if (m_building[i] == NULL) {
-				m_building[i] = new Object(x, y, type, id);
+				m_building[i] = new Object(x, y, size, type, id);
 				break;
 			}
 	}
 	else if (type == OBJECT_CHARACTER) {
 		for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 			if (m_character[i] == NULL) {
-				m_character[i] = new Object(x, y, type, id);
+				m_character[i] = new Object(x, y, size, type, id);
 
 				if (id == 2)
 					southTime = 0;
-
+				m_soundEffect2->PlaySound(soundEffect2, false, 0.4f);
 				break;
 			}
 	}
 	else if (type == OBJECT_BULLET) {
 		for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 			if (m_bullet[i] == NULL) {
-				m_bullet[i] = new Object(x, y, type, id);
+				m_bullet[i] = new Object(x, y, size, type, id);
 				break;
 			}
 	}
 	else if (type == OBJECT_ARROW) {
 		for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 			if (m_arrow[i] == NULL) {
-				m_arrow[i] = new Object(x, y, type, id);
+				m_arrow[i] = new Object(x, y, size, type, id);
+				break;
+			}
+	}
+	else if (type == OBJECT_EXPLOSION) {
+		for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
+			if (m_explosion[i] == NULL) {
+				m_soundEffect3->PlaySound(soundEffect3, false, 0.3f);
+				m_explosion[i] = new Object(x, y, size, type, id);
 				break;
 			}
 	}
@@ -110,6 +135,8 @@ void SceneMgr::Update(float elapsedTime)
 	// 유닛 배치
 	northTime += elapsedTime / 1000;
 	southTime += elapsedTime / 1000;
+	weatherTime += elapsedTime / 1000;
+	shakeTime += elapsedTime / 1000;
 
 	if (northTime >= 3) {
 		random_device rd;
@@ -117,32 +144,8 @@ void SceneMgr::Update(float elapsedTime)
 		uniform_int_distribution<> uiX(-200, 200);
 		uniform_int_distribution<> uiY(150, 300);
 
-		Add(uiX(rng), uiY(rng), OBJECT_CHARACTER, 1);
+		Add(uiX(rng), uiY(rng), 80, OBJECT_CHARACTER, 1);
 		northTime = 0;
-	}
-
-	// tex update
-	texTime += elapsedTime / 1000;
-	weatherTime += elapsedTime / 1000;
-
-	if (texTime >= 0.1) {
-		if (m_texCha1Num[0] == 15)
-			m_texCha1Num[0] = 0;			
-		else		
-			m_texCha1Num[0]++;
-		//
-		if (m_texCha2Num[0] == 5) {
-			m_texCha2Num[0] = 0;
-			m_texCha2Num[1]++;
-		}
-		else
-			m_texCha2Num[0]++;
-
-		if (m_texCha2Num[0] == 5 && m_texCha2Num[1] == 3) {
-			m_texCha2Num[0] = 0;
-			m_texCha2Num[1] = 0;
-		}
-		texTime = 0;
 	}
 
 	// 오브젝트 업데이트
@@ -151,7 +154,7 @@ void SceneMgr::Update(float elapsedTime)
 			m_building[i]->Update(elapsedTime);
 
 			if (m_building[i]->getAttackTime() >= 2) {
-				Add(m_building[i]->getX(), m_building[i]->getY(), OBJECT_BULLET, m_building[i]->getId());
+				Add(m_building[i]->getX(), m_building[i]->getY(), 6, OBJECT_BULLET, m_building[i]->getId());
 				m_building[i]->setAttackTime(0);
 			}
 		}
@@ -161,27 +164,44 @@ void SceneMgr::Update(float elapsedTime)
 			m_character[i]->Update(elapsedTime);
 
 			if (m_character[i]->getAttackTime() >= 3) {
-				Add(m_character[i]->getX(), m_character[i]->getY(), OBJECT_ARROW, m_character[i]->getId());
+				Add(m_character[i]->getX(), m_character[i]->getY(), 30, OBJECT_ARROW, m_character[i]->getId());
 				m_character[i]->setAttackTime(0);
 			}
 		}
 
-	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i) {
 		if (m_bullet[i] != NULL)
 			m_bullet[i]->Update(elapsedTime);
-
-	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
 		if (m_arrow[i] != NULL)
 			m_arrow[i]->Update(elapsedTime);
+		if (m_explosion[i] != NULL)
+			m_explosion[i]->Update(elapsedTime);
+	}
+
+	if (shakeTime >= 0.03) {
+		if (shakeV != 0) {
+			if (shakeNum == 20)
+				shakeV = -1;
+			else if (shakeNum == -20) {
+				shakeNum = 0;
+				shakeV = 0;
+			}
+
+			shakeNum += shakeV * 5;
+		}
+		shakeTime = 0;
+	}
 
 	// 충돌체크
 	Collision();
 
 	// 소멸
 	for (int i = 0; i < 6; ++i)
-		if (m_building[i] != NULL&&m_building[i]->getLife() <= 0) {
+		if (m_building[i] != NULL && m_building[i]->getLife() <= 0) {
 			delete m_building[i];
 			m_building[i] = NULL;
+			shakeV = 1;
+			m_soundEffect->PlaySound(soundEffect, false, 0.4f);
 		}
 
 	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i) {
@@ -196,49 +216,54 @@ void SceneMgr::Update(float elapsedTime)
 			delete m_bullet[i];
 			m_bullet[i] = NULL;
 		}
-	}
-
-	for (int i = 0; i < MAX_ATTACK_COUNT; ++i) {
 		if (m_arrow[i] != NULL && m_arrow[i]->getLife() <= 0) {
 			delete m_arrow[i];
 			m_arrow[i] = NULL;
+		}
+		if (m_explosion[i] != NULL && m_explosion[i]->getLife() <= 0) {
+			delete m_explosion[i];
+			m_explosion[i] = NULL;
 		}
 	}
 }
 
 void SceneMgr::DrawSolidRect()
 {
-	//m_Renderer->SetSceneTransform(10, 0, 1, 1);
+	m_Renderer->DrawTexturedRect(0, fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack[0], 0.99);
+	m_Renderer->DrawTexturedRect(0, -fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack[1], 0.99);
 
-	m_Renderer->DrawTexturedRect(0, fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
-	m_Renderer->DrawTexturedRect(0, -fieldH / 4, 0, fieldW, 1.0, 1.0, 1.0, 1, m_texBack, 0.99);
-
+	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
+		if (m_explosion[i] != NULL)
+			m_Renderer->DrawTexturedRectSeq(m_explosion[i]->getX(), m_explosion[i]->getY(), 0,
+				m_explosion[i]->getSize(), m_explosion[i]->getRGB(0), m_explosion[i]->getRGB(1), m_explosion[i]->getRGB(2), 1, m_texExplosion, m_explosion[i]->getTexNum(0), m_explosion[i]->getTexNum(1), 4, 4, 0.02);
 
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL) {
+			m_Renderer->SetSceneTransform(shakeNum, 0, 1, 1);
 			if (m_building[i]->getId() == 1) {
 				m_Renderer->DrawTexturedRect(m_building[i]->getX(), m_building[i]->getY(), 0,
-					m_building[i]->getSize(), m_building[i]->getRGB(0), m_building[i]->getRGB(1), m_building[i]->getRGB(2), 1, m_texBuilding1, 0.1);
+					m_building[i]->getSize(), m_building[i]->getRGB(0), m_building[i]->getRGB(1), m_building[i]->getRGB(2), 1, m_texBuilding1[i], 0.1);
 				m_Renderer->DrawSolidRectGauge(m_building[i]->getX(), m_building[i]->getY() + 60, 0, 100, 5, 1, 0, 0, 1, m_building[i]->getLife() / 500, 0.1);
 
 			}
 			else {
 				m_Renderer->DrawTexturedRect(m_building[i]->getX(), m_building[i]->getY(), 0,
-					m_building[i]->getSize(), m_building[i]->getRGB(0), m_building[i]->getRGB(1), m_building[i]->getRGB(2), 1, m_texBuilding2, 0.1);
+					m_building[i]->getSize(), m_building[i]->getRGB(0), m_building[i]->getRGB(1), m_building[i]->getRGB(2), 1, m_texBuilding2[i - 3], 0.1);
 				m_Renderer->DrawSolidRectGauge(m_building[i]->getX(), m_building[i]->getY() + 60, 0, 100, 5, 0, 0, 1, 1, m_building[i]->getLife() / 500, 0.1);
 			}
+			m_Renderer->SetSceneTransform(0, 0, 1, 1);
 		}
 
 	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL) {
 			if (m_character[i]->getId() == 1) {
 				m_Renderer->DrawTexturedRectSeq(m_character[i]->getX(), m_character[i]->getY(), 0,
-					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara1, m_texCha1Num[0], m_texCha1Num[1], 14, 1, 0.2);
+					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara1, m_character[i]->getTexNum(0), m_character[i]->getTexNum(1), 14, 1, 0.2);
 				m_Renderer->DrawSolidRectGauge(m_character[i]->getX(), m_character[i]->getY() + m_character[i]->getSize() / 2, 0, 40, 5, 1, 0, 0, 1, m_character[i]->getLife() / 100, 0.2);
 			}
 			else {
 				m_Renderer->DrawTexturedRectSeq(m_character[i]->getX(), m_character[i]->getY(), 0,
-					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara2, m_texCha2Num[0], m_texCha2Num[1], 6, 4, 0.2);
+					m_character[i]->getSize(), m_character[i]->getRGB(0), m_character[i]->getRGB(1), m_character[i]->getRGB(2), 1, m_texChara2, m_character[i]->getTexNum(0), m_character[i]->getTexNum(1), 6, 4, 0.2);
 				m_Renderer->DrawSolidRectGauge(m_character[i]->getX(), m_character[i]->getY() + m_character[i]->getSize() / 2, 0, 40, 5, 0, 0, 1, 1, m_character[i]->getLife() / 100, 0.2);
 			}
 		}
@@ -254,13 +279,15 @@ void SceneMgr::DrawSolidRect()
 		}
 
 	for (int i = 0; i < MAX_ATTACK_COUNT; ++i)
-		if (m_arrow[i] != NULL)
-			m_Renderer->DrawSolidRect(m_arrow[i]->getX(), m_arrow[i]->getY(), 0,
-				m_arrow[i]->getSize(), m_arrow[i]->getRGB(0), m_arrow[i]->getRGB(1), m_arrow[i]->getRGB(2), 1, 0.3);
+		if (m_arrow[i] != NULL) {
+			if (m_arrow[i]->getId() == 1)
+				m_Renderer->DrawTexturedRect(m_arrow[i]->getX(), m_arrow[i]->getY(), 0, m_arrow[i]->getSize(), m_arrow[i]->getRGB(0), m_arrow[i]->getRGB(1), m_arrow[i]->getRGB(2), 1, m_texArrow1, 0.3);
+			else
+				m_Renderer->DrawTexturedRect(m_arrow[i]->getX(), m_arrow[i]->getY(), 0, m_arrow[i]->getSize(), m_arrow[i]->getRGB(0), m_arrow[i]->getRGB(1), m_arrow[i]->getRGB(2), 1, m_texArrow2, 0.3);
+		}
 
-	m_Renderer->DrawText(0, 0, GLUT_BITMAP_9_BY_15, 0.0, 0.0, 0.0, "2015182045 HyeRyeong");
-
-	m_Renderer->DrawParticleClimate(0, 0, 0, 1, 0, 0, 0, 1, -0.1, -0.1, m_texBull, weatherTime, 0.01);
+	m_Renderer->DrawParticleClimate(0, 0, 0, 1, 1, 1, 1, 1, -0.1, -0.1, m_texBull, weatherTime, 0.01);
+	m_Renderer->DrawText(-35, 35, GLUT_BITMAP_HELVETICA_18, 0.0, 0.0, 0.0, "City VS Country");
 }
 
 void SceneMgr::Collision()
@@ -269,7 +296,7 @@ void SceneMgr::Collision()
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL)
 			for (int j = 0; j < MAX_CHARACTER_COUNT; ++j)
-				if (m_character[j] != NULL&&m_building[i]->getId() != m_character[j]->getId())
+				if (m_character[j] != NULL && m_building[i]->getId() != m_character[j]->getId())
 				{
 					float size = m_building[i]->getSize() / 2;
 					float size1 = m_character[j]->getSize() / 2;
@@ -277,7 +304,8 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_building[i]->getX() - size, m_building[i]->getY() - size, m_building[i]->getX() + size, m_building[i]->getY() + size,
 						m_character[j]->getX() - size1, m_character[j]->getY() - size1, m_character[j]->getX() + size1, m_character[j]->getY() + size1))
 					{
-						m_building[i]->Collision(m_character[j]->getLife());
+						Add(m_building[i]->getX(), m_building[i]->getY(), 100, OBJECT_EXPLOSION, 99);
+						m_building[i]->Collision(100);
 						delete m_character[j];
 						m_character[j] = NULL;
 					}
@@ -287,7 +315,7 @@ void SceneMgr::Collision()
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL)
 			for (int j = 0; j < MAX_ATTACK_COUNT; ++j)
-				if (m_bullet[j] != NULL&&m_building[i]->getId() != m_bullet[j]->getId())
+				if (m_bullet[j] != NULL && m_building[i]->getId() != m_bullet[j]->getId())
 				{
 					float size = m_building[i]->getSize() / 2;
 					float size1 = m_bullet[j]->getSize() / 2;
@@ -295,6 +323,7 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_building[i]->getX() - size, m_building[i]->getY() - size, m_building[i]->getX() + size, m_building[i]->getY() + size,
 						m_bullet[j]->getX() - size1, m_bullet[j]->getY() - size1, m_bullet[j]->getX() + size1, m_bullet[j]->getY() + size1))
 					{
+						Add(m_building[i]->getX(), m_building[i]->getY(), 100, OBJECT_EXPLOSION, 99);
 						m_building[i]->Collision(m_bullet[j]->getLife());
 						delete m_bullet[j];
 						m_bullet[j] = NULL;
@@ -305,7 +334,7 @@ void SceneMgr::Collision()
 	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL)
 			for (int j = 0; j < MAX_ATTACK_COUNT; ++j)
-				if (m_bullet[j] != NULL&&m_character[i]->getId() != m_bullet[j]->getId())
+				if (m_bullet[j] != NULL && m_character[i]->getId() != m_bullet[j]->getId())
 				{
 					float size = m_character[i]->getSize() / 2;
 					float size1 = m_bullet[j]->getSize() / 2;
@@ -313,6 +342,7 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_character[i]->getX() - size, m_character[i]->getY() - size, m_character[i]->getX() + size, m_character[i]->getY() + size,
 						m_bullet[j]->getX() - size1, m_bullet[j]->getY() - size1, m_bullet[j]->getX() + size1, m_bullet[j]->getY() + size1))
 					{
+						Add(m_character[i]->getX(), m_character[i]->getY(), 50, OBJECT_EXPLOSION, 99);
 						m_character[i]->Collision(m_bullet[j]->getLife());
 						delete m_bullet[j];
 						m_bullet[j] = NULL;
@@ -323,7 +353,7 @@ void SceneMgr::Collision()
 	for (int i = 0; i < 6; ++i)
 		if (m_building[i] != NULL)
 			for (int j = 0; j < MAX_ATTACK_COUNT; ++j)
-				if (m_arrow[j] != NULL&&m_building[i]->getId() != m_arrow[j]->getId())
+				if (m_arrow[j] != NULL && m_building[i]->getId() != m_arrow[j]->getId())
 				{
 					float size = m_building[i]->getSize() / 2;
 					float size1 = m_arrow[j]->getSize() / 2;
@@ -331,6 +361,7 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_building[i]->getX() - size, m_building[i]->getY() - size, m_building[i]->getX() + size, m_building[i]->getY() + size,
 						m_arrow[j]->getX() - size1, m_arrow[j]->getY() - size1, m_arrow[j]->getX() + size1, m_arrow[j]->getY() + size1))
 					{
+						Add(m_building[i]->getX(), m_building[i]->getY(), 100, OBJECT_EXPLOSION, 99);
 						m_building[i]->Collision(m_arrow[j]->getLife());
 						delete m_arrow[j];
 						m_arrow[j] = NULL;
@@ -341,7 +372,7 @@ void SceneMgr::Collision()
 	for (int i = 0; i < MAX_CHARACTER_COUNT; ++i)
 		if (m_character[i] != NULL)
 			for (int j = 0; j < 100; ++j)
-				if (m_arrow[j] != NULL&&m_character[i]->getId() != m_arrow[j]->getId())
+				if (m_arrow[j] != NULL && m_character[i]->getId() != m_arrow[j]->getId())
 				{
 					float size = m_character[i]->getSize() / 2;
 					float size1 = m_arrow[j]->getSize() / 2;
@@ -349,6 +380,7 @@ void SceneMgr::Collision()
 					if (CollisionTest(m_character[i]->getX() - size, m_character[i]->getY() - size, m_character[i]->getX() + size, m_character[i]->getY() + size,
 						m_arrow[j]->getX() - size1, m_arrow[j]->getY() - size1, m_arrow[j]->getX() + size1, m_arrow[j]->getY() + size1))
 					{
+						Add(m_character[i]->getX(), m_character[i]->getY(), 50, OBJECT_EXPLOSION, 99);
 						m_character[i]->Collision(m_arrow[j]->getLife());
 						delete m_arrow[j];
 						m_arrow[j] = NULL;

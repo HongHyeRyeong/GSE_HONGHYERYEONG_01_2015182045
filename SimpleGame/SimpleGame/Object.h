@@ -10,13 +10,16 @@ class Object
 	float vX, vY;
 	float life, lifeTime;
 	float attackTime;
+	float texTime;
+	int m_texNum[2];
 
 public:
 	Object() {};
-	Object(float x, float y, int type, int id);
+	Object(float x, float y, float size, int type, int id);
 	~Object() {};
 
 	void Update(float elapsedTime);
+	void UpdateTex();
 	void Collision(int num) { life -= num; }
 
 	float getX() { return x; };
@@ -27,6 +30,7 @@ public:
 	float gerLifeTime() { return lifeTime; }
 	int getId() { return id; }
 	float getAttackTime() { return attackTime; }
+	int getTexNum(int i) { return  m_texNum[i]; }
 
 	void setAttackTime(float time) { attackTime = time; }
 };
